@@ -1,0 +1,13 @@
+node_modules/
+.env
+state.json
+.DS_Store
+npm-debug.log*
+
+# OpenClaw device auth key — never commit this
+.device-key.json
+
+# User assets — provide your own
+public/assets/bg.jpg
+public/assets/bubble-chat.png
+public/assets/expressions/

@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ES // ALTER EGO</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=GFS+Didot&family=Share+Tech+Mono&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet" />
+
+<style>
+:root {
+    --bg-deep:      #1B1B1B;
+    --grey-dark:    #353535;
+    --grey-mid:     #545454;
+    --grey-neutral: #646464;
+    --grey-light:   #7B7B7B;
+    --grey-book:    #A8A8A8;
+    --grey-shelf:   #D7D7D7;
+    --text-primary: #F9F9F9;
+    --text-dim:     #989898;
+    --text-user:    #C9C9C9;
+    --font-body:    'Cormorant Garamond', Georgia, serif;
+    --font-mono:    'Share Tech Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg-deep); }
+
+body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 100;
+    pointer-events: none; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#scene {
+    position: fixed; inset: 0; z-index: 0;
+    background: url('assets/bg.jpg') center center / cover no-repeat;
+    filter: grayscale(0.2) brightness(0.72);
+}
+#scene::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        linear-gradient(to top,  rgba(8,8,8,0.85) 0%, rgba(8,8,8,0.10) 40%, transparent 55%),
+        linear-gradient(to right, rgba(8,8,8,0.20) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 48%, transparent 38%, rgba(0,0,0,0.26) 100%);
+    pointer-events: none;
+}
+
+#app {
+    position: relative;
+    z-index: 1;
+
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: flex-end;   /* ⭐ grounds character */
+    justify-content: center;   /* center layout */
+    gap: clamp(20px, 4vw, 80px); 
+
+    overflow: visible; /* ⭐ important */
+}
+
+/* ── Character ──────────────────────────────────────────── */
+#character-col {
+    position: relative;
+    height: 95vh;
+    flex-shrink: 0;
+    min-height: 95vh;
+    width: clamp(320px, 32vw, 520px);
+
+    display: flex;
+    align-items: flex-end;   /* ⭐ important */
+    justify-content: flex-end;   /* anchor right */
+
+    position: relative;
+    z-index: 3;
+}
+@keyframes idleBreath {
+    0%,100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+}
+
+#character-img,
+#character-img-back {
+    transform: translateZ(0);
+    will-change: opacity;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+left: auto;
+
+    width: 100%;
+    height: 95vh;          /* lock height */
+    max-height: 95vh;
+
+    object-fit: contain;
+    object-position: bottom center;
+
+    transition: opacity 0.25s ease;
+
+    filter:
+        drop-shadow(10px 0 45px rgba(0,0,0,0.9))
+        brightness(1.05);
+    animation: idleBreath 6s ease-in-out infinite;
+}
+
+#character-img-back {
+    opacity: 0;
+}
+
+
+/* ── Dialogue column ────────────────────────────────────── */
+#dialogue-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    align-items: flex-end;
+
+    justify-content: flex-end;
+    padding-bottom: 18vh;
+
+    align-self: center;   /* ⭐ THIS FIXES IT */
+
+    padding-right: 6vw;
+
+    max-width: min(52vw, 720px);
+    transform: translateX(-180px);
+    margin-left: 0;
+}
+
+#user-echo {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(11px, 0.95vw, 13px);
+    color: var(--text-user);
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transition: opacity 0.35s;
+    align-self: flex-end;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    min-height: 1.3em;
+}
+#user-echo.visible { opacity: 1; }
+
+/* ── Bubble ─────────────────────────────────────────────── */
+#bubble-wrap {
+    position: relative;
+    z-index: 1;
+    position: relative;
+    width: 100%;
+    pointer-events: all;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    max-width: 92%;
+    filter:
+        drop-shadow(-8px 10px 35px rgba(0,0,0,0.65));
+}
+#bubble-wrap.visible { opacity: 1; }
+
+#bubble-img { display: block; width: 125%; transform: scaleX(-1); /* ⭐ mirror */ }
+
+/*
+   Adjust top/left/right/bottom to match your bubble PNG's inner area.
+   bottom accounts for the bubble tail — 12% is a reasonable start.
+*/
+#bubble-text-area {
+    position: absolute;
+    top: 10%;
+    left: 30%;
+    right: 0%;
+    bottom: 30%;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;   /* vertical center */
+    align-items: center;       /* horizontal center */
+
+    text-align: center;
+    overflow: hidden;
+}
+
+/* ── Chunk text — font-size set by JS ───────────────────── */
+#bubble-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-body);
+    font-weight: 300;
+
+    font-size: 20px;
+    line-height: 1.6;
+
+    color: var(--text-primary);
+
+    word-break: break-word;
+    white-space: pre-wrap;
+
+    max-width: 42ch;   /* ⭐ reading width limit */
+    margin: 0 auto;
+
+    text-align: center;
+
+    overflow: hidden;
+    transition: opacity 0.15s ease;
+}
+#bubble-text.fading { opacity: 0; }
+
+/* Thinking dots */
+#thinking-dots {
+    display: none;
+    gap: 5px;
+    align-items: center;
+}
+#thinking-dots.active { display: flex; }
+.dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--grey-book);
+    animation: dotP 1.2s ease-in-out infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotP {
+    0%,80%,100% { opacity:0.25; transform:scale(1); }
+    40%          { opacity:1;    transform:scale(1.4); }
+}
+
+/* ── Chunk navigator ────────────────────────────────────── */
+#chunk-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding-top: 5px;
+    height: 22px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+#chunk-nav.visible { opacity: 1; pointer-events: all; }
+
+#chunk-counter {
+    font-family: var(--font-mono);
+    font-size: clamp(7px, 0.58vw, 9px);
+    letter-spacing: 0.22em;
+    color: var(--grey-neutral);
+    text-transform: uppercase;
+    user-select: none;
+}
+
+.chunk-btn {
+    background: none;
+    border: none;
+    color: var(--grey-book);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: clamp(9px, 0.7vw, 11px);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transition: color 0.15s;
+    user-select: none;
+    line-height: 1;
+}
+.chunk-btn:hover { color: var(--text-primary); }
+.chunk-btn:disabled { opacity: 0.2; cursor: default; }
+
+/* ── Input dock ─────────────────────────────────────────── */
+#input-dock {
+    position: fixed;
+    bottom: 0; left: 0; right: 0; z-index: 10;
+    display: flex;
+    justify-content: center;
+    padding: 16px 24px 22px;
+    background: linear-gradient(to top, rgba(8,8,8,0.92) 0%, transparent 100%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s 0.2s;
+}
+#input-dock.visible { opacity: 1; pointer-events: all; }
+
+#input-inner {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    max-width: 560px;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 10px 18px;
+    background: rgba(37,37,37,0.90);
+    border: 1px solid var(--grey-mid);
+    border-radius: 1px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: clamp(13px, 1.1vw, 16px);
+    letter-spacing: 0.02em;
+    outline: none;
+    backdrop-filter: blur(14px);
+    transition: border-color 0.2s, background 0.2s;
+}
+#chat-input::placeholder { color: var(--grey-mid); font-style: italic; }
+#chat-input:focus { border-color: var(--grey-book); background: rgba(37,37,37,0.98); }
+
+#send-btn {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border: 1px solid var(--grey-mid);
+    border-radius: 1px;
+    background: rgba(37,37,37,0.90);
+    color: var(--grey-book);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(14px);
+    transition: all 0.18s;
+}
+#send-btn:hover  { border-color: var(--grey-shelf); background: rgba(84,84,84,0.6); color: var(--text-primary); }
+#send-btn:active { transform: scale(0.94); }
+#send-btn:disabled { opacity: 0.28; pointer-events: none; }
+
+/* ── Status bar ─────────────────────────────────────────── */
+#status-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0; z-index: 20;
+    display: flex; align-items: center; gap: 9px;
+    padding: 12px 18px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(8,8,8,0.55) 0%, transparent 100%);
+}
+#status-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    flex-shrink: 0; background: var(--grey-dark);
+    transition: background 0.3s;
+}
+#status-dot.connected    { background: #888; }
+#status-dot.connecting   { background: #666; animation: sp 1s infinite; }
+#status-dot.disconnected { background: var(--grey-dark); }
+@keyframes sp { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+#status-text {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.28em;
+    color: var(--grey-neutral);
+    text-transform: uppercase;
+}
+#btn-reset {
+    pointer-events: all;
+    margin-left: auto;
+    padding: 3px 9px;
+    border: 1px solid var(--grey-dark);
+    border-radius: 1px;
+    background: rgba(27,27,27,0.72);
+    color: var(--grey-mid);
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.18s;
+}
+#btn-reset:hover { border-color: var(--grey-neutral); color: var(--grey-book); }
+</style>
+</head>
+<body>
+
+<div id="scene"></div>
+
+<div id="status-bar">
+    <div id="status-dot" class="disconnected"></div>
+    <span id="status-text">Connecting</span>
+    <button id="btn-reset">Reset</button>
+</div>
+
+<div id="app">
+
+    <div id="character-col">
+        <img id="character-img-back"
+            src="assets/expressions/normal-with-book.png" />
+        <img id="character-img"
+             src="assets/expressions/normal-with-book.png"
+             alt="Es" />
+    </div>
+
+    <div id="dialogue-col">
+
+        <div id="user-echo"></div>
+
+        <div id="bubble-wrap">
+            <img id="bubble-img" src="assets/bubble-chat.png" alt="" />
+
+            <div id="bubble-text-area">
+
+                <div id="bubble-text">
+                    <div id="thinking-dots">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                </div>
+
+                <div id="chunk-nav">
+                    <button class="chunk-btn" id="btn-prev">← prev</button>
+                    <span id="chunk-counter"></span>
+                    <button class="chunk-btn" id="btn-next">next →</button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<div id="input-dock">
+    <div id="input-inner">
+        <input id="chat-input" type="text"
+               placeholder="Speak to Es…"
+               autocomplete="off" spellcheck="false" />
+        <button id="send-btn" title="Send">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M2.5 7.5H12.5M12.5 7.5L8.5 3.5M12.5 7.5L8.5 11.5"
+                      stroke="currentColor" stroke-width="1.3"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   ES — ALTER EGO INTERFACE
+   Per-chunk expressions · auto-fit text · no streaming
+══════════════════════════════════════════════════════════ */
+
+// ── Expression map ────────────────────────────────────────
+const EXPR_MAP = {
+    'bashful_defense_closed_eyes': 'bashful-defense-closed-eyes',
+    'bashful_defense_flustered':   'bashful-defense-flustered',
+    'bashful_defense_shy':         'bashful-defense-shy',
+    'flip_page_book':              'flip-page-book',
+    'genuine_smile':               'genuine-smile',
+    'manic_smile':                 'manic-smile',
+    'melancholic_smile':           'melancholic-smile',
+    'normal_with_book':            'normal-with-book',
+    'reading_book':                'reading-book',
+    'sardonic_smile':              'sardonic-smile',
+};
+const DEFAULT_EXPR = 'normal-with-book';
+
+function exprSrc(raw) {
+    const key = (raw || '').replace(/^expressions\//, '').replace(/\.png$/, '');
+    if (EXPR_MAP[key]) return `assets/expressions/${EXPR_MAP[key]}.png`;
+    return `assets/expressions/${key || DEFAULT_EXPR}.png`;
+}
+
+// ── DOM refs ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const charImg      = $('character-img');
+const bubbleW      = $('bubble-wrap');
+const bubbleText   = $('bubble-text');
+const thinkD       = $('thinking-dots');
+const inputDock    = $('input-dock');
+const chatIn       = $('chat-input');
+const sendB        = $('send-btn');
+const userEcho     = $('user-echo');
+const statusDot    = $('status-dot');
+const statusTxt    = $('status-text');
+const chunkNav     = $('chunk-nav');
+const btnPrev      = $('btn-prev');
+const btnNext      = $('btn-next');
+const chunkCounter = $('chunk-counter');
+const textArea     = $('bubble-text-area');
+
+// ── Chunk state ───────────────────────────────────────────
+// Each entry: { text: string, expression: string|null }
+let chunks   = [];
+let chunkIdx = 0;
+
+// ── Font auto-fit ─────────────────────────────────────────
+const FONT_MAX = 24;
+const FONT_MIN = 15;
+const FONT_STEP = 0.5; // px  — granularity of reduction
+
+function fitFontSize() {
+    // Available height: text area minus nav row height when visible
+    const navH    = chunks.length > 1 ? 27 : 0;
+    const areaH   = textArea.offsetHeight - navH - 6; // 6px breathing room
+
+    bubbleText.style.fontSize = FONT_MAX + 'px';
+
+    let size = FONT_MAX;
+    while (bubbleText.scrollHeight > areaH && size > FONT_MIN) {
+        size -= FONT_STEP;
+        bubbleText.style.fontSize = size + 'px';
+    }
+}
+
+// ── Regex — expression tag ────────────────────────────────
+// Non-global, used per-string via .exec then replaced
+const EXPR_RE = /\[expressions\/([^\]]+\.png)\]/;
+
+// Extract first expression tag from a raw string
+function extractExpr(raw) {
+    const m = EXPR_RE.exec(raw);
+    if (!m) return { expr: null, text: raw };
+    return {
+        expr: `expressions/${m[1]}`,
+        text: raw.replace(m[0], '').trim(),
+    };
+}
+
+// Strip markdown formatting (not expression tags — those come out in extractExpr)
+function stripMd(t) {
+    return (t || '')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/#{1,6}\s/g, '')
+        .replace(/MEDIA:\/\S+/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+// ── Split raw response into chunks ────────────────────────
+function splitChunks(rawText) {
+    if (!rawText) return [];
+
+    // 1. Split on paragraph breaks
+    let parts = rawText.split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
+
+    // 2. If still one long block, split on sentence boundaries
+    if (parts.length === 1 && parts[0].length > 280) {
+        parts = parts[0]
+            .split(/(?<=[.?!…])\s+/)
+            .reduce((acc, s) => {
+                const last = acc[acc.length - 1];
+                if (last && (last + ' ' + s).length < 260) {
+                    acc[acc.length - 1] = last + ' ' + s;
+                } else {
+                    acc.push(s);
+                }
+                return acc;
+            }, [])
+            .filter(Boolean);
+    }
+
+    // 3. Single newlines as last resort
+    if (parts.length === 1 && parts[0].includes('\n')) {
+        parts = parts[0].split('\n').map(s => s.trim()).filter(Boolean);
+    }
+
+    // Extract per-chunk expression tags, strip markdown from text
+    return parts.map(raw => {
+        const { expr, text } = extractExpr(raw);
+        return { text: stripMd(text), expression: expr };
+    });
+}
+
+// ── Expression crossfade ──────────────────────────────────
+const charFront = document.getElementById("character-img");
+const charBack  = document.getElementById("character-img-back");
+
+function setExpr(raw) {
+    if (!raw) return;
+
+    const src = exprSrc(raw);
+
+    if (charFront.src.includes(src)) return;
+
+    // Load first (important)
+    const img = new Image();
+    img.src = src;
+
+    img.onload = () => {
+
+        // Put new expression behind
+        charBack.src = src;
+
+        // Start crossfade
+        charBack.style.opacity = "1";
+        charFront.style.opacity = "0";
+
+        // After fade completes
+        setTimeout(() => {
+
+            // Swap instantly while hidden
+            charFront.src = src;
+
+            // Reset layers WITHOUT animation flash
+            charFront.style.transition = "none";
+            charBack.style.transition = "none";
+
+            charFront.style.opacity = "1";
+            charBack.style.opacity = "0";
+
+            // Force reflow (important)
+            void charFront.offsetWidth;
+
+            // Restore transition
+            charFront.style.transition = "opacity 0.25s ease";
+            charBack.style.transition = "opacity 0.25s ease";
+
+        }, 250);
+    };
+}
+
+// ── Render chunk at index ─────────────────────────────────
+function renderChunk(idx) {
+    if (!chunks.length) return;
+    idx = Math.max(0, Math.min(idx, chunks.length - 1));
+    chunkIdx = idx;
+
+    const chunk = chunks[chunkIdx];
+
+    // Brief fade out
+    bubbleText.classList.add('fading');
+
+    setTimeout(() => {
+        // Replace text content (keep thinkD node intact)
+        // Remove all non-thinkD children
+        Array.from(bubbleText.childNodes).forEach(n => {
+            if (n !== thinkD) bubbleText.removeChild(n);
+        });
+        thinkD.classList.remove('active');
+
+        // Insert text
+        if (chunk.text) {
+            bubbleText.insertBefore(
+                document.createTextNode(chunk.text),
+                thinkD
+            );
+        }
+
+        // Auto-fit font
+        fitFontSize();
+
+        // Fade back in
+        bubbleText.classList.remove('fading');
+
+        // Fire this chunk's expression
+        if (chunk.expression) setExpr(chunk.expression);
+    }, 160);
+
+    // Navigator
+    if (chunks.length > 1) {
+        chunkNav.classList.add('visible');
+        chunkCounter.textContent = `${chunkIdx + 1} / ${chunks.length}`;
+        btnPrev.disabled = chunkIdx === 0;
+        btnNext.disabled = chunkIdx === chunks.length - 1;
+    } else {
+        chunkNav.classList.remove('visible');
+    }
+}
+
+// ── Load a full response ──────────────────────────────────
+function loadResponse(rawText) {
+    cancelIdle();
+    // Top-level expression (fires immediately, before chunk 0 might override)
+    const { expr: topExpr } = extractExpr(rawText);
+    if (topExpr) setExpr(topExpr);
+
+    chunks   = splitChunks(rawText);
+    chunkIdx = 0;
+    if (!chunks.length) return;
+
+    bubbleW.classList.add('visible');
+    renderChunk(0);
+}
+
+// ── Navigation ────────────────────────────────────────────
+btnNext.addEventListener('click', () => {
+    if (chunkIdx < chunks.length - 1) renderChunk(chunkIdx + 1);
+});
+btnPrev.addEventListener('click', () => {
+    if (chunkIdx > 0) renderChunk(chunkIdx - 1);
+});
+
+// Arrow keys / space when input not focused
+document.addEventListener('keydown', e => {
+    if (document.activeElement === chatIn) return;
+    if ((e.key === 'ArrowRight' || e.key === ' ') && chunkIdx < chunks.length - 1) {
+        e.preventDefault(); renderChunk(chunkIdx + 1);
+    }
+    if (e.key === 'ArrowLeft' && chunkIdx > 0) {
+        e.preventDefault(); renderChunk(chunkIdx - 1);
+    }
+});
+
+// ── Thinking state ────────────────────────────────────────
+function showThinking() {
+    cancelIdle();
+    bubbleW.classList.add('visible');
+    Array.from(bubbleText.childNodes).forEach(n => {
+        if (n !== thinkD) bubbleText.removeChild(n);
+    });
+    thinkD.classList.add('active');
+    chunkNav.classList.remove('visible');
+    chunks = []; chunkIdx = 0;
+}
+
+function hideThinking() {
+    thinkD.classList.remove('active');
+}
+
+// ── Socket ────────────────────────────────────────────────
+const socket = io({ transports: ['websocket'] });
+
+socket.on('connect', () => {
+    statusDot.className = 'connected';
+    statusTxt.textContent = 'Connected';
+    inputDock.classList.add('visible');
+});
+
+socket.on('disconnect', () => {
+    statusDot.className = 'disconnected';
+    statusTxt.textContent = 'Disconnected';
+});
+
+socket.on('init_state', state => {
+    statusDot.className = 'connected';
+    statusTxt.textContent = 'Connected';
+    inputDock.classList.add('visible');
+    if (state.currentExpression) setExpr(state.currentExpression);
+    const msgs = (state.messages || []).filter(m => m.type === 'message');
+    if (msgs.length) loadResponse(msgs[msgs.length - 1].data);
+});
+
+socket.on('update', ({ type, data }) => {
+    switch (type) {
+
+        case 'gateway_status':
+            statusDot.className = data;
+            statusTxt.textContent = data.replace(/_/g, ' ');
+            break;
+
+        case 'thinking':
+            if (data) showThinking();
+            else hideThinking();
+            break;
+
+        // Both 'message' and 'vn_text' load a full response — no streaming
+        case 'message':
+        case 'vn_text':
+            hideThinking();
+            loadResponse(data);
+            break;
+
+        // Expression-only event from server — only apply if current chunk has none
+        case 'expression':
+            if (!chunks[chunkIdx]?.expression) setExpr(data);
+            break;
+
+        case 'user_message': {
+            const txt = (typeof data === 'string' ? data : '')
+                .replace(/\[📎[^\]]+\]/g, '').trim();
+            if (txt) {
+                userEcho.textContent = `"${txt}"`;
+                userEcho.classList.add('visible');
+                setTimeout(() => userEcho.classList.remove('visible'), 5000);
+            }
+            break;
+        }
+
+        case 'session_reset':
+            bubbleW.classList.remove('visible');
+            chunks = []; chunkIdx = 0;
+            userEcho.classList.remove('visible');
+            chunkNav.classList.remove('visible');
+            charImg.src = exprSrc(DEFAULT_EXPR);
+            charImg.style.opacity = '1';
+            scheduleIdle();
+            break;
+    }
+});
+
+// ── Send ──────────────────────────────────────────────────
+function send() {
+    const msg = chatIn.value.trim();
+    if (!msg) return;
+    chatIn.value = '';
+    sendB.disabled = true;
+    setTimeout(() => { sendB.disabled = false; }, 600);
+    socket.emit('chat_message', { message: msg, attachments: [] });
+}
+sendB.addEventListener('click', send);
+chatIn.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); send(); }
+});
+
+$('btn-reset').addEventListener('click', () => {
+    if (confirm('Reset session?')) fetch('/api/session/reset', { method: 'POST' });
+});
+
+window.addEventListener('load', () => chatIn.focus());
+
+// Preload all expressions
+Object.values(EXPR_MAP).forEach(stem => {
+    const img = new Image();
+    img.src = `assets/expressions/${stem}.png`;
+});
+
+/* ── Idle system ───────────────────────────────────────── */
+
+let idleTimer = null;
+let idleLoop  = null;
+let isIdle    = false;
+
+const IDLE_DELAY = 6000; // after silence (ms)
+
+/* Start idle countdown */
+function scheduleIdle() {
+
+    cancelIdle();
+
+    idleTimer = setTimeout(() => {
+        startIdle();
+    }, IDLE_DELAY);
+}
+
+/* Stop everything idle related */
+function cancelIdle() {
+
+    clearTimeout(idleTimer);
+    clearInterval(idleLoop);
+
+    idleTimer = null;
+    idleLoop  = null;
+    isIdle    = false;
+}
+
+/* Begin idle animation */
+function startIdle() {
+
+    if (isIdle) return;
+    isIdle = true;
+
+    runIdleCycle();
+
+    // repeat cycle
+    idleLoop = setInterval(runIdleCycle, 9000);
+}
+
+/* Idle animation sequence */
+function runIdleCycle() {
+
+    if (!isIdle) return;
+
+    // reading normally
+    setExpr('expressions/reading-book.png');
+
+    // flip page later
+    setTimeout(() => {
+
+        if (!isIdle) return;
+
+        setExpr('expressions/flip-page-book.png');
+
+    }, 4500);
+
+    window.addEventListener('load', () => {
+    chatIn.focus();
+    scheduleIdle();
+});
+}
+/* ── Touch / Click Interaction System ─────────────────── */
+
+const charCol = document.getElementById('character-col');
+
+// Zone thresholds (0 = top of image, 1 = bottom)
+// Character is bottom-anchored so we invert: 0% from bottom = feet, 100% = head
+const ZONE = {
+    HEAD:   { yMin: 0.55, yMax: 1.0  },   // top ~45% of image height
+    NOSE:   { yMin: 0.68, yMax: 0.80 },   // nose/center band
+    CHEEK:  { yMin: 0.55, yMax: 0.68 },   // lower face
+};
+
+let holdTimer    = null;
+let holdFired    = false;
+let dragStartX   = null;
+let dragStartY   = null;
+let isDragging   = false;
+const HOLD_MS    = 800;   // ms to trigger "pat"
+const DRAG_PX    = 18;    // px movement to count as stroke
+
+function getRelY(e, el) {
+    const rect = el.getBoundingClientRect();
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    // Relative from top (0 = top, 1 = bottom)
+    const relY = (clientY - rect.top) / rect.height;
+    const relX = (clientX - rect.left) / rect.width;
+    return { relY, relX };
+}
+
+function inZone(relY, zone) {
+    // image is bottom-anchored; invert y so 1 = top of image visually
+    const inv = 1 - relY;
+    return inv >= zone.yMin && inv <= zone.yMax;
+}
+
+function sendInteraction(msg) {
+    if (!msg) return;
+    socket.emit('chat_message', { message: msg, attachments: [] });
+
+    // Show user echo
+    userEcho.textContent = `"${msg}"`;
+    userEcho.classList.add('visible');
+    setTimeout(() => userEcho.classList.remove('visible'), 4000);
+}
+
+function onPointerDown(e) {
+    holdFired   = false;
+    isDragging  = false;
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartX = clientX;
+    dragStartY = clientY;
+
+    const { relY } = getRelY(e, charCol);
+
+    // Only react to head zone
+    if (!inZone(relY, ZONE.HEAD)) return;
+
+    // Start hold timer → pat
+    holdTimer = setTimeout(() => {
+        holdFired = true;
+        // Visual pulse
+        charCol.style.filter = 'brightness(1.12)';
+        setTimeout(() => charCol.style.filter = '', 300);
+        sendInteraction('**pats head**');
+    }, HOLD_MS);
+}
+
+function onPointerMove(e) {
+    if (dragStartX === null) return;
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const dx = Math.abs(clientX - dragStartX);
+    const dy = Math.abs(clientY - dragStartY);
+
+    if ((dx > DRAG_PX || dy > DRAG_PX) && !isDragging) {
+        isDragging = true;
+        clearTimeout(holdTimer);
+
+        const { relY } = getRelY(e, charCol);
+        if (inZone(relY, ZONE.HEAD)) {
+            sendInteraction('**strokes hair**');
+        }
+    }
+}
+
+function onPointerUp(e) {
+    clearTimeout(holdTimer);
+
+    if (isDragging || holdFired) {
+        dragStartX = dragStartY = null;
+        isDragging = false;
+        return;
+    }
+
+    const { relY, relX } = getRelY(e, charCol);
+
+    if (!inZone(relY, ZONE.HEAD)) {
+        dragStartX = dragStartY = null;
+        return;
+    }
+
+    // Differentiate nose vs cheek by relX and relY
+    if (inZone(relY, ZONE.NOSE) && relX > 0.35 && relX < 0.65) {
+        sendInteraction('**boops nose**');
+    } else if (inZone(relY, ZONE.CHEEK)) {
+        sendInteraction('**taps cheek**');
+    } else {
+        sendInteraction('**pokes head**');
+    }
+
+    dragStartX = dragStartY = null;
+    isDragging = false;
+}
+
+// Double click/tap
+let lastTap = 0;
+charCol.addEventListener('pointerdown', e => {
+    const now = Date.now();
+    if (now - lastTap < 350) {
+        clearTimeout(holdTimer);
+        holdFired = true;
+        sendInteraction('**taps head twice**');
+    }
+    lastTap = now;
+});
+
+// Attach events
+charCol.addEventListener('pointerdown',  onPointerDown,  { passive: true });
+charCol.addEventListener('pointermove',  onPointerMove,  { passive: true });
+charCol.addEventListener('pointerup',    onPointerUp);
+charCol.addEventListener('pointercancel', () => {
+    clearTimeout(holdTimer);
+    isDragging = false; holdFired = false;
+    dragStartX = dragStartY = null;
+});
+
+// Prevent context menu on long-press (mobile)
+charCol.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+
+</body>
+</html>
